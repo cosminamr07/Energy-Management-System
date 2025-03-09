@@ -1,0 +1,61 @@
+.transaction-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.transaction-box {
+    height: auto; /* Înălțimea se ajustează automat pentru a menține proporția */
+    max-width: 800px; /* Modificare pentru a limita lățimea maximă a containerului */
+    padding: 24px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin: auto; /* Adaugă această linie pentru a centra box-ul */
+    height: auto;
+    margin-top: 200px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+.background-image{  
+  background-image: url('../images/mercedes.jpg.jpg'); /* Schimbă calea la imaginea ta */
+  background-position: center; /* Așază imaginea în centrul containerului */
+}
+.transaction-title {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+  font-family: 'Noto Sans Cypro Minoan', sans-serif;
+
+}
+
+.transaction-form {
+  display: grid;
+  gap: 16px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.grid-item {
+  width: 100%;
+}
+
+.text-field {
+  width: calc(100% - 16px); /* Lățime mai mare pentru câmpurile de text, cu o mică reducere pentru a gestiona spațiile dintre ele */
+}
+
+.buttonClass {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .buttonClass > Button {
+    margin-top: 10px;
+    width: 40%;
+  }
+  

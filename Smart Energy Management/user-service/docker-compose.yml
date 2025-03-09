@@ -1,0 +1,210 @@
+#version: '3'
+
+services:
+
+  monitoring-container:
+
+    image: monitoring_img
+
+    environment:
+      DB_IP: db-container-monitoring
+      DB_PORT: 5432
+      DB_DBNAME: monitoring-sv
+      DB_USER: postgres
+      DB_PASSWORD: root
+    deploy:
+      replicas: 2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitoring-container.rule=Host(`monitoring-container.localhost`)"
+      - "traefik.http.services.monitoring-container.loadbalancer.server.port=8082"
+
+    depends_on:
+      - db-container-monitoring
+    networks:
+      - myNetwork
+
+  db-container-monitoring:
+    image: postgres:latest
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DATABASE: monitoring-sv
+    volumes:
+      - postgres_monitoring_db:/var/lib/postgresql/data
+    networks:
+      - myNetwork
+
+
+  chat-container:
+
+    image: chat_img
+
+    environment:
+      DB_IP: db-container-chat
+      DB_PORT: 5432
+      DB_DBNAME: chat-sv
+      DB_USER: postgres
+      DB_PASSWORD: root
+    deploy:
+      replicas: 2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chat-container.rule=Host(`chat-container.localhost`)"
+      - "traefik.http.services.chat-container.loadbalancer.server.port=8084"
+
+    depends_on:
+      - db-container-chat
+    networks:
+      - myNetwork
+
+  db-container-chat:
+    image: postgres:latest
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DATABASE: chat-sv
+    volumes:
+      - postgres_chat_db:/var/lib/postgresql/data
+    networks:
+      - myNetwork
+
+
+
+
+  device-container:
+    image: device_img
+    environment:
+      DB_IP: db-container-device
+      DB_PORT: 5432
+      DB_DBNAME: device-sv
+      DB_USER: postgres
+      DB_PASSWORD: root
+    depends_on:
+      - db-container-device
+    deploy:
+      replicas: 2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.device-container.rule=Host(`device-container.localhost`)"
+      - "traefik.http.services.device-container.loadbalancer.server.port=8081"
+    networks:
+      - myNetwork
+
+  db-container-device:
+    image: postgres:latest
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DATABASE: device-sv
+    volumes:
+      - postgres_device_db:/var/lib/postgresql/data
+    networks:
+      - myNetwork
+
+  user-container:
+    image: user_img
+    environment:
+      DB_IP: db-container-user
+      DB_PORT: 5432
+      DB_DBNAME: user-sv
+      DB_USER: postgres
+      DB_PASSWORD: root
+      DEVICE_SERVICE_URL: http://device-container:8081
+    depends_on:
+      - db-container-user
+    deploy:
+      replicas: 2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-container.rule=Host(`user-container.localhost`)"
+      - "traefik.http.services.user-container.loadbalancer.server.port=8080"
+
+    networks:
+      - myNetwork
+
+  db-container-user:
+    image: postgres:latest
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DATABASE: user-sv
+    volumes:
+      - postgres_user_db:/var/lib/postgresql/data
+    networks:
+      - myNetwork
+
+  react-app:
+    build:
+      context: C:\New folder\frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3005:80"
+    environment:
+      - REACT_APP_BACKEND1_URL=http://user-container:8080  # URL pentru backend-ul user
+      - REACT_APP_BACKEND2_URL=http://device-container:8081  # URL pentru backend-ul device
+      - REACT_APP_BACKEND4_URL=http://localhost:8083  # URL pentru backend-ul device
+      - REACT_APP_BACKEND5_URL=http://chat-container:8084  # URL pentru backend-ul device
+
+    depends_on:
+      - user-container
+      - device-container
+      - monitoring-container
+      - chat-container
+    networks:
+      - myNetwork
+
+  rabbitmq:
+    image: rabbitmq:4.0.3-management
+    container_name: rabbitmq
+    ports:
+      - "15672:15672" # RabbitMQ management UI
+      - "5672:5672" # RabbitMQ message broker port
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - myNetwork
+
+  reverse-proxy:
+    image: traefik:v3.2
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+      - --log.level=DEBUG
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+      - "8085:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_logs:/var/log/traefik
+    networks:
+      - myNetwork
+
+networks:
+  myNetwork:
+    driver: bridge
+
+
+volumes:
+  postgres_monitoring_db:
+    external: true
+  postgres_user_db:
+    external: true
+  postgres_device_db:
+    external: true
+  postgres_chat_db:
+    external: true
+  traefik_logs:
+    external: true
